@@ -7,7 +7,7 @@ using System.Web;
 using System.Web.UI;
 using Oracle.ManagedDataAccess.Client;
 
-namespace CCRPT
+namespace CRM
 {
     /// <summary>
     /// CCMR1013 – 案件明細 WebForm
@@ -33,65 +33,67 @@ namespace CCRPT
 
         private class BasicInfoRow
         {
-            public string Header     { get; set; }
-            public string ArItems    { get; set; }
-            public string Tittle     { get; set; }
-            public string MainItem   { get; set; }
-            public string MainSeq    { get; set; }
-            public string SubItem    { get; set; }
-            public string SubSeq     { get; set; }
-            public string ArSeq      { get; set; }
-            public string Content    { get; set; }
-            public string Who        { get; set; }
-            public string WhenDate   { get; set; }
-            public string Result     { get; set; }
+            public string Header { get; set; }
+            public string ArItems { get; set; }
+            public string Tittle { get; set; }
+            public string MainItem { get; set; }
+            public string MainSeq { get; set; }
+            public string SubItem { get; set; }
+            public string SubSeq { get; set; }
+            public string ArSeq { get; set; }
+            public string Content { get; set; }
+            public string Who { get; set; }
+            public string WhenDate { get; set; }
+            public string Result { get; set; }
             public string CreateDate { get; set; }
-            public string FileName   { get; set; }
-            public string FileUrl    { get; set; }
+            public string FileName { get; set; }
+            public string FileUrl { get; set; }
         }
 
         private class FabFanoutRow
         {
-            public string CcmNo        { get; set; }
-            public string MainItem     { get; set; }
-            public string MainSeq      { get; set; }
-            public string ArItem       { get; set; }
-            public string ArSeq        { get; set; }
-            public string Content      { get; set; }
-            public string Standard     { get; set; }
-            public string CaseFanIn    { get; set; }
-            public string Who          { get; set; }
+            public string CcmNo { get; set; }
+            public string MainItem { get; set; }
+            public string MainSeq { get; set; }
+            public string ArItem { get; set; }
+            public string ArSeq { get; set; }
+            public string Content { get; set; }
+            public string Standard { get; set; }
+            public string CaseFanIn { get; set; }
+            public string Who { get; set; }
             public string FanOutResult { get; set; }
-            public string FanOutWhen   { get; set; }
-            public string Evidence     { get; set; }
-            public string CloseDate    { get; set; }
+            public string FanOutWhen { get; set; }
+            public string Evidence { get; set; }
+            public string CloseDate { get; set; }
+            public string FabFanoutFileConnect { get; set; }
         }
 
         private class TimelinessRow
         {
-            public string CcmNo        { get; set; }
-            public string Step         { get; set; }
+            public string CcmNo { get; set; }
+            public string Step { get; set; }
             public string CompleteTime { get; set; }
-            public string Remarked     { get; set; }
+            public string Remarked { get; set; }
         }
 
         private class CustomerResponseRow
         {
-            public string CustMemo    { get; set; }
+            public string CustMemo { get; set; }
             public string ProdDispose { get; set; }
         }
 
         private class FileRow
         {
-            public string Header   { get; set; }
-            public string ArItems  { get; set; }
-            public string Step     { get; set; }
+            public string Header { get; set; }
+            public string ArItems { get; set; }
+            public string Step { get; set; }
             public string MainItem { get; set; }
-            public string MainSeq  { get; set; }
-            public string SubItem  { get; set; }
-            public string SubSeq   { get; set; }
+            public string MainSeq { get; set; }
+            public string SubItem { get; set; }
+            public string SubSeq { get; set; }
             public string FileName { get; set; }
-            public string FileUrl  { get; set; }
+            public string FileUrl { get; set; }
+            public string FabFanoutFileConnect { get; set; }
         }
 
         // ─────────────────────────────────────────────────────────────────
@@ -101,11 +103,8 @@ namespace CCRPT
         private string ConnectionString
         {
             get
-            {
-                var cs = ConfigurationManager.ConnectionStrings["OracleDB"];
-                if (cs == null || string.IsNullOrWhiteSpace(cs.ConnectionString))
-                    throw new InvalidOperationException("未在 Web.config 中設定 OracleDB 連線字串。");
-                return cs.ConnectionString;
+            {  var a = new SEMI_Conn();
+                return a.strConn_CRM;
             }
         }
 
@@ -118,6 +117,7 @@ namespace CCRPT
             if (!IsPostBack)
             {
                 string ccmNo = (Request.QueryString["ccm_no"] ?? string.Empty).Trim();
+                ccmNo = "2025060031-1C";
                 if (!string.IsNullOrEmpty(ccmNo))
                 {
                     BindAllData(ccmNo);
@@ -137,11 +137,11 @@ namespace CCRPT
         {
             try
             {
-                var basicRows  = LoadBasicInfo(ccmNo);
+                var basicRows = LoadBasicInfo(ccmNo);
                 var fanoutRows = LoadFabFanout(ccmNo);
-                var tlRows     = LoadTimeliness(ccmNo);
-                var custRows   = LoadCustomerResponse(ccmNo);
-                var fileRows   = LoadFiles(ccmNo);
+                var tlRows = LoadTimeliness(ccmNo);
+                var custRows = LoadCustomerResponse(ccmNo);
+                var fileRows = LoadFiles(ccmNo);
 
                 BindBasicInfo(basicRows, fileRows);
                 BindInvestigationReport(fileRows);
@@ -150,6 +150,14 @@ namespace CCRPT
                 BindFabFanout(fanoutRows, fileRows);
                 BindTimeliness(tlRows, fileRows);
                 BindCustomerResponse(custRows);
+
+                // Show the more-info toggle bar if at least one grey section has data
+                pnlBtnFabFanout.Visible = pnlFabFanout.Visible;
+                pnlBtnTimeliness.Visible = pnlTimeliness.Visible;
+                pnlBtnCustResponse.Visible = pnlCustResponse.Visible;
+                pnlMoreInfoBar.Visible = pnlFabFanout.Visible
+                                          || pnlTimeliness.Visible
+                                          || pnlCustResponse.Visible;
             }
             catch (Exception ex)
             {
@@ -164,7 +172,7 @@ namespace CCRPT
             if (caseNoRow != null)
             {
                 litCaseDate.Text = Enc(caseNoRow.CreateDate);
-                litCaseNo.Text   = Enc(caseNoRow.Content);
+                litCaseNo.Text = Enc(caseNoRow.Content);
             }
 
             // 案件主旨（d2 明細，header = main_item = 案件主旨）
@@ -177,7 +185,7 @@ namespace CCRPT
             string custInfoText = BuildMultiRowContent(rows.FindAll(r => r.Header == "客戶提供資訊"));
             if (!string.IsNullOrWhiteSpace(custInfoText))
             {
-                litCustInfo.Text    = custInfoText;
+                litCustInfo.Text = custInfoText;
                 pnlCustInfo.Visible = true;
             }
 
@@ -185,7 +193,7 @@ namespace CCRPT
             var custFiles = fileRows.FindAll(f => f.Header == "客戶提供檔案");
             if (custFiles.Count > 0)
             {
-                litCustFiles.Text    = BuildFileLinks(custFiles);
+                litCustFiles.Text = BuildFileLinks(custFiles);
                 pnlCustFiles.Visible = true;
             }
         }
@@ -195,7 +203,7 @@ namespace CCRPT
             var invFiles = fileRows.FindAll(f => f.Header == "調查報告 及 相關附件");
             if (invFiles.Count > 0)
             {
-                litInvFiles.Text         = BuildFileLinks(invFiles);
+                litInvFiles.Text = BuildFileLinks(invFiles);
                 pnlInvestigation.Visible = true;
             }
         }
@@ -205,19 +213,19 @@ namespace CCRPT
             string text = BuildMultiRowContent(rows.FindAll(r => r.Header == "真因分析"));
             if (!string.IsNullOrWhiteSpace(text))
             {
-                litRootCause.Text    = text;
+                litRootCause.Text = text;
                 pnlRootCause.Visible = true;
             }
         }
 
         private void BindCorrectiveActions(List<BasicInfoRow> rows, List<FileRow> fileRows)
         {
-            var arRows  = rows.FindAll(r => r.Header == "矯正/預防措施執行暨成效追蹤");
+            var arRows = rows.FindAll(r => r.Header == "矯正/預防措施執行暨成效追蹤");
             var arFiles = fileRows.FindAll(f => f.Header == "矯正/預防措施執行暨成效追蹤");
             if (arRows.Count > 0)
             {
-                litCorrectiveActions.Text        = BuildCorrectiveActionsHtml(arRows, arFiles);
-                pnlCorrectiveActions.Visible     = true;
+                litCorrectiveActions.Text = BuildCorrectiveActionsHtml(arRows, arFiles);
+                pnlCorrectiveActions.Visible = true;
             }
         }
 
@@ -225,15 +233,9 @@ namespace CCRPT
         {
             if (rows.Count > 0)
             {
-                litFabFanout.Text    = BuildFabFanoutHtml(rows);
-                pnlFabFanout.Visible = true;
-
                 var fabFiles = fileRows.FindAll(f => f.Header == "Fab fanout");
-                if (fabFiles.Count > 0)
-                {
-                    litFabFiles.Text    = BuildFileLinks(fabFiles);
-                    pnlFabFiles.Visible = true;
-                }
+                litFabFanout.Text = BuildFabFanoutHtml(rows, fabFiles);
+                pnlFabFanout.Visible = true;
             }
         }
 
@@ -242,7 +244,7 @@ namespace CCRPT
             if (rows.Count > 0)
             {
                 var tlFiles = fileRows.FindAll(f => f.Header == "處理時效紀錄");
-                litTimeliness.Text    = BuildTimelinessHtml(rows, tlFiles);
+                litTimeliness.Text = BuildTimelinessHtml(rows, tlFiles);
                 pnlTimeliness.Visible = true;
             }
         }
@@ -251,10 +253,7 @@ namespace CCRPT
         {
             if (rows.Count > 0)
             {
-                var row = rows[0];
-                string memo = string.IsNullOrWhiteSpace(row.CustMemo) ? "無" : row.CustMemo;
-                litCustMemo.Text        = FmtMultiline(memo);
-                litProdDispose.Text     = Enc(MapProdDispose(row.ProdDispose));
+                litCustResponse.Text = BuildCustomerResponseHtml(rows);
                 pnlCustResponse.Visible = true;
             }
         }
@@ -300,13 +299,12 @@ namespace CCRPT
             return sb.ToString();
         }
 
-        /// <summary>Fab fanout 表格</summary>
-        private string BuildFabFanoutHtml(List<FabFanoutRow> rows)
+        /// <summary>Fab fanout 表格（不含主項目欄，附件依 fabfanout_fileconnect 精準配對）</summary>
+        private string BuildFabFanoutHtml(List<FabFanoutRow> rows, List<FileRow> fabFiles)
         {
             var sb = new StringBuilder();
             sb.Append("<div style='overflow-x:auto'>");
             sb.Append("<table class='data-tbl'><thead><tr>");
-            sb.Append("<th>主項目</th>");
             sb.Append("<th>項目內容</th>");
             sb.Append("<th style='width:90px'>Case-Fan-In(Y/N)</th>");
             sb.Append("<th style='width:110px'>Who</th>");
@@ -314,12 +312,12 @@ namespace CCRPT
             sb.Append("<th style='width:110px'>When</th>");
             sb.Append("<th>Evidence</th>");
             sb.Append("<th style='width:110px'>Close Date</th>");
+            sb.Append("<th style='width:170px'>附件</th>");
             sb.Append("</tr></thead><tbody>");
 
             foreach (var row in rows)
             {
                 sb.Append("<tr>");
-                sb.AppendFormat("<td>{0}</td>", Enc(row.MainItem));
                 sb.AppendFormat("<td style='white-space:pre-wrap;word-break:break-word'>{0}</td>",
                                 Enc(row.Content));
                 sb.AppendFormat("<td style='text-align:center'>{0}</td>", Enc(row.CaseFanIn));
@@ -329,6 +327,15 @@ namespace CCRPT
                 sb.AppendFormat("<td style='white-space:pre-wrap;word-break:break-word'>{0}</td>",
                                 Enc(row.Evidence));
                 sb.AppendFormat("<td>{0}</td>", Enc(row.CloseDate));
+
+                // 附件：依 fabfanout_fileconnect 精準配對（兩端均不為空才比對）
+                var matched = fabFiles.FindAll(f => !string.IsNullOrEmpty(row.FabFanoutFileConnect)
+                                                 && !string.IsNullOrEmpty(f.FabFanoutFileConnect)
+                                                 && f.FabFanoutFileConnect == row.FabFanoutFileConnect);
+                sb.Append("<td class='file-list'>");
+                foreach (var f in matched)
+                    AppendFileLink(sb, f.FileUrl, f.FileName);
+                sb.Append("</td>");
                 sb.Append("</tr>");
             }
 
@@ -362,6 +369,32 @@ namespace CCRPT
                 foreach (var f in files)
                     AppendFileLink(sb, f.FileUrl, f.FileName);
                 sb.Append("</td>");
+                sb.Append("</tr>");
+            }
+
+            sb.Append("</tbody></table></div>");
+            return sb.ToString();
+        }
+
+        /// <summary>客戶回應與意見 三欄表格（客戶意見、產品處置、時間）</summary>
+        private string BuildCustomerResponseHtml(List<CustomerResponseRow> rows)
+        {
+            var sb = new StringBuilder();
+            sb.Append("<div style='overflow-x:auto'>");
+            sb.Append("<table class='data-tbl'><thead><tr>");
+            sb.Append("<th>客戶意見</th>");
+            sb.Append("<th style='width:200px'>產品處置</th>");
+            sb.Append("<th style='width:140px'>時間</th>");
+            sb.Append("</tr></thead><tbody>");
+
+            foreach (var row in rows)
+            {
+                string memo = string.IsNullOrWhiteSpace(row.CustMemo) ? "無" : row.CustMemo;
+                sb.Append("<tr>");
+                sb.AppendFormat("<td style='white-space:pre-wrap;word-break:break-word'>{0}</td>",
+                                FmtMultiline(memo));
+                sb.AppendFormat("<td>{0}</td>", Enc(MapProdDispose(row.ProdDispose)));
+                sb.Append("<td>—</td>");
                 sb.Append("</tr>");
             }
 
@@ -434,7 +467,7 @@ SELECT cd.main_item AS HEADER, '' AS AR_ITEMS, cd.tittle AS TITTLE,
        cd.main_item AS MAIN_ITEM, cd.main_seq AS MAIN_SEQ,
        cd.sub_item AS SUB_ITEM, cd.sub_seq AS SUB_SEQ, cd.ar_seq AS AR_SEQ,
        cd.content AS CONTENT, cd.who AS WHO,
-       TO_CHAR(cd.""when"", 'YYYY/MM/DD') AS WHENDATE,
+       TO_CHAR(cd.when, 'YYYY/MM/DD') AS WHENDATE,
        DECODE(cd.result,'going','進行中','done','已完成',
               'cancel','取消','abrogation','終止','') AS RESULT,
        TO_CHAR(cd.create_date, 'YYYY/MM/DD') AS CREATE_DATE,
@@ -448,7 +481,7 @@ SELECT DECODE(sub_item,'真因','真因分析','矯正/預防措施執行暨成�
        cd.tittle AS TITTLE, cd.main_item AS MAIN_ITEM, cd.main_seq AS MAIN_SEQ,
        cd.sub_item AS SUB_ITEM, cd.sub_seq AS SUB_SEQ, cd.ar_seq AS AR_SEQ,
        cd.content AS CONTENT, cd.who AS WHO,
-       TO_CHAR(cd.""when"", 'YYYY/MM/DD') AS WHENDATE,
+       TO_CHAR(cd.when, 'YYYY/MM/DD') AS WHENDATE,
        DECODE(cd.result,'going','進行中','done','已完成',
               'cancel','取消','abrogation','終止','') AS RESULT,
        TO_CHAR(cd.create_date, 'YYYY/MM/DD') AS CREATE_DATE,
@@ -463,21 +496,21 @@ SELECT DECODE(sub_item,'真因','真因分析','矯正/預防措施執行暨成�
 
             return Query(sql, ccmNo, dr => new BasicInfoRow
             {
-                Header     = S(dr, "HEADER"),
-                ArItems    = S(dr, "AR_ITEMS"),
-                Tittle     = S(dr, "TITTLE"),
-                MainItem   = S(dr, "MAIN_ITEM"),
-                MainSeq    = S(dr, "MAIN_SEQ"),
-                SubItem    = S(dr, "SUB_ITEM"),
-                SubSeq     = S(dr, "SUB_SEQ"),
-                ArSeq      = S(dr, "AR_SEQ"),
-                Content    = S(dr, "CONTENT"),
-                Who        = S(dr, "WHO"),
-                WhenDate   = S(dr, "WHENDATE"),
-                Result     = S(dr, "RESULT"),
+                Header = S(dr, "HEADER"),
+                ArItems = S(dr, "AR_ITEMS"),
+                Tittle = S(dr, "TITTLE"),
+                MainItem = S(dr, "MAIN_ITEM"),
+                MainSeq = S(dr, "MAIN_SEQ"),
+                SubItem = S(dr, "SUB_ITEM"),
+                SubSeq = S(dr, "SUB_SEQ"),
+                ArSeq = S(dr, "AR_SEQ"),
+                Content = S(dr, "CONTENT"),
+                Who = S(dr, "WHO"),
+                WhenDate = S(dr, "WHENDATE"),
+                Result = S(dr, "RESULT"),
                 CreateDate = S(dr, "CREATE_DATE"),
-                FileName   = S(dr, "FILE_NAME"),
-                FileUrl    = S(dr, "FILE_URL"),
+                FileName = S(dr, "FILE_NAME"),
+                FileUrl = S(dr, "FILE_URL"),
             });
         }
 
@@ -492,7 +525,8 @@ SELECT a.ccm_no AS CCM_NO, a.main_item AS MAIN_ITEM,
        a.fan_out_result AS FAN_OUT_RESULT,
        TO_CHAR(a.fan_out_when, 'YYYY/MM/DD') AS FAN_OUT_WHEN,
        a.evidence AS EVIDENCE,
-       TO_CHAR(a.close_date, 'YYYY/MM/DD') AS CLOSE_DATE
+       TO_CHAR(a.close_date, 'YYYY/MM/DD') AS CLOSE_DATE,
+       (NVL(a.ar_item,'') || '-' || NVL(TO_CHAR(a.ar_seq),'')) AS FABFANOUT_FILECONNECT
   FROM ccm_8dreport_qa_follow a
  WHERE a.ccm_no = :ccm_no
    AND a.fan_out_flag = 'Y'
@@ -505,19 +539,20 @@ SELECT a.ccm_no AS CCM_NO, a.main_item AS MAIN_ITEM,
 
             return Query(sql, ccmNo, dr => new FabFanoutRow
             {
-                CcmNo        = S(dr, "CCM_NO"),
-                MainItem     = S(dr, "MAIN_ITEM"),
-                MainSeq      = S(dr, "MAIN_SEQ"),
-                ArItem       = S(dr, "AR_ITEM"),
-                ArSeq        = S(dr, "AR_SEQ"),
-                Content      = S(dr, "CONTENT"),
-                Standard     = S(dr, "STANDARD"),
-                CaseFanIn    = S(dr, "CASE_FAN_IN"),
-                Who          = S(dr, "WHO"),
+                CcmNo = S(dr, "CCM_NO"),
+                MainItem = S(dr, "MAIN_ITEM"),
+                MainSeq = S(dr, "MAIN_SEQ"),
+                ArItem = S(dr, "AR_ITEM"),
+                ArSeq = S(dr, "AR_SEQ"),
+                Content = S(dr, "CONTENT"),
+                Standard = S(dr, "STANDARD"),
+                CaseFanIn = S(dr, "CASE_FAN_IN"),
+                Who = S(dr, "WHO"),
                 FanOutResult = S(dr, "FAN_OUT_RESULT"),
-                FanOutWhen   = S(dr, "FAN_OUT_WHEN"),
-                Evidence     = S(dr, "EVIDENCE"),
-                CloseDate    = S(dr, "CLOSE_DATE"),
+                FanOutWhen = S(dr, "FAN_OUT_WHEN"),
+                Evidence = S(dr, "EVIDENCE"),
+                CloseDate = S(dr, "CLOSE_DATE"),
+                FabFanoutFileConnect = S(dr, "FABFANOUT_FILECONNECT"),
             });
         }
 
@@ -538,16 +573,16 @@ SELECT a.ccm_no AS CCM_NO,
 
             return Query(sql, ccmNo, dr => new TimelinessRow
             {
-                CcmNo        = S(dr, "CCM_NO"),
-                Step         = S(dr, "STEP"),
+                CcmNo = S(dr, "CCM_NO"),
+                Step = S(dr, "STEP"),
                 CompleteTime = S(dr, "COMPLETE_TIME"),
-                Remarked     = S(dr, "REMARKED"),
+                Remarked = S(dr, "REMARKED"),
             });
         }
 
         private List<CustomerResponseRow> LoadCustomerResponse(string ccmNo)
         {
-            // 原始 SQL 無 WHERE 子句；加上 ccm_no 篩選以確保只取當筆案件
+            // 原始資料表無標準時間欄位；時間欄位在 UI 中顯示 — 作為預留位置
             const string sql = @"
 SELECT NVL(a.cust_memo, '無') AS CUST_MEMO,
        a.prod_dispose AS PROD_DISPOSE
@@ -556,7 +591,7 @@ SELECT NVL(a.cust_memo, '無') AS CUST_MEMO,
 
             return Query(sql, ccmNo, dr => new CustomerResponseRow
             {
-                CustMemo    = S(dr, "CUST_MEMO"),
+                CustMemo = S(dr, "CUST_MEMO"),
                 ProdDispose = S(dr, "PROD_DISPOSE"),
             });
         }
@@ -566,7 +601,7 @@ SELECT NVL(a.cust_memo, '無') AS CUST_MEMO,
             // 路徑替換值從 Web.config appSettings 讀取，避免硬編碼內部網路資訊
             string fileShareRoot = ConfigurationManager.AppSettings["FileShareRoot"]
                                    ?? @"\\snas1\Server_Share\ECS\程式拋轉區\CCM\";
-            string fileUrlBase   = ConfigurationManager.AppSettings["FileUrlBase"]
+            string fileUrlBase = ConfigurationManager.AppSettings["FileUrlBase"]
                                    ?? "openedge:10.5.0.54/CCM_FILE/";
 
             // REPLACE 中的路徑由 C# 端替換，SQL 使用參數化佔位符
@@ -596,7 +631,8 @@ SELECT DISTINCT
        sub_item AS SUB_ITEM,
        NVL(TO_CHAR(sub_seq), '') AS SUB_SEQ,
        file_name AS FILE_NAME,
-       REPLACE(file_link, :share_root, :url_base) AS FILE_URL
+       REPLACE(file_link, :share_root, :url_base) AS FILE_URL,
+       (NVL(cf.sub_item,'') || '-' || NVL(TO_CHAR(cf.sub_seq),'')) AS FABFANOUT_FILECONNECT
   FROM ccm_8dreport_file cf
  WHERE cf.ccm_no = :ccm_no
    AND ( (main_item IN ('d2','d4qa','d6qa','d7qa',
@@ -613,23 +649,25 @@ SELECT DISTINCT
                                 FROM ccm_8dreport_detail
                                WHERE tittle = 'd7'   AND ccm_no = cf.ccm_no),
                      '1'))
-     OR (fan_in_item = 'fanout' AND sub_item IN ('D6AR','D7AR')) )
+     OR (fan_in_item = 'fanout' AND sub_item IN ('D6AR','D7AR'))
+     OR main_item = 'QA提供客戶' )
  ORDER BY main_seq, sub_seq";
 
             return QueryWithParams(sql, dr => new FileRow
             {
-                Header   = S(dr, "HEADER"),
-                ArItems  = S(dr, "AR_ITEMS"),
-                Step     = S(dr, "STEP"),
+                Header = S(dr, "HEADER"),
+                ArItems = S(dr, "AR_ITEMS"),
+                Step = S(dr, "STEP"),
                 MainItem = S(dr, "MAIN_ITEM"),
-                MainSeq  = S(dr, "MAIN_SEQ"),
-                SubItem  = S(dr, "SUB_ITEM"),
-                SubSeq   = S(dr, "SUB_SEQ"),
+                MainSeq = S(dr, "MAIN_SEQ"),
+                SubItem = S(dr, "SUB_ITEM"),
+                SubSeq = S(dr, "SUB_SEQ"),
                 FileName = S(dr, "FILE_NAME"),
-                FileUrl  = S(dr, "FILE_URL"),
-            }, new OracleParameter(":ccm_no",    OracleDbType.Varchar2) { Value = ccmNo },
+                FileUrl = S(dr, "FILE_URL"),
+                FabFanoutFileConnect = S(dr, "FABFANOUT_FILECONNECT"),
+            }, new OracleParameter(":ccm_no", OracleDbType.Varchar2) { Value = ccmNo },
                new OracleParameter(":share_root", OracleDbType.Varchar2) { Value = fileShareRoot },
-               new OracleParameter(":url_base",   OracleDbType.Varchar2) { Value = fileUrlBase });
+               new OracleParameter(":url_base", OracleDbType.Varchar2) { Value = fileUrlBase });
         }
 
         // ─────────────────────────────────────────────────────────────────
@@ -651,10 +689,10 @@ SELECT DISTINCT
                                            params OracleParameter[] parameters)
         {
             var list = new List<T>();
-            var dt   = new DataTable();
+            var dt = new DataTable();
 
             using (var conn = new OracleConnection(ConnectionString))
-            using (var cmd  = new OracleCommand(sql, conn))
+            using (var cmd = new OracleCommand(sql, conn))
             {
                 cmd.BindByName = true;
                 foreach (var p in parameters)
@@ -697,8 +735,8 @@ SELECT DISTINCT
             if (string.IsNullOrEmpty(s)) return string.Empty;
             return HttpUtility.HtmlEncode(s)
                               .Replace("\r\n", "\n")
-                              .Replace("\r",   "\n")
-                              .Replace("\n",   "<br />");
+                              .Replace("\r", "\n")
+                              .Replace("\n", "<br />");
         }
 
         /// <summary>狀態值轉 Badge HTML</summary>
@@ -710,11 +748,11 @@ SELECT DISTINCT
             string css;
             switch (result)
             {
-                case "進行中": css = "bs-going";  break;
-                case "已完成": css = "bs-done";   break;
-                case "取消":   css = "bs-cancel"; break;
-                case "終止":   css = "bs-abort";  break;
-                default:       css = "bs-other";  break;
+                case "進行中": css = "bs-going"; break;
+                case "已完成": css = "bs-done"; break;
+                case "取消": css = "bs-cancel"; break;
+                case "終止": css = "bs-abort"; break;
+                default: css = "bs-other"; break;
             }
             return $"<span class='badge-status {css}'>{Enc(result)}</span>";
         }
@@ -731,7 +769,7 @@ SELECT DISTINCT
             {
                 case "選程1": return "退貨至成品倉";
                 case "選程2": return "退貨至廢品倉";
-                default:      return prodDispose ?? string.Empty;
+                default: return prodDispose ?? string.Empty;
             }
         }
 
