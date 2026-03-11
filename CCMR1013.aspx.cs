@@ -151,13 +151,10 @@ namespace CRM
                 BindTimeliness(tlRows, fileRows);
                 BindCustomerResponse(custRows);
 
-                // Show the more-info toggle bar if at least one grey section has data
-                pnlBtnFabFanout.Visible = pnlFabFanout.Visible;
-                pnlBtnTimeliness.Visible = pnlTimeliness.Visible;
-                pnlBtnCustResponse.Visible = pnlCustResponse.Visible;
-                pnlMoreInfoBar.Visible = pnlFabFanout.Visible
-                                          || pnlTimeliness.Visible
-                                          || pnlCustResponse.Visible;
+                // Ghost 透明按鈕可見度（有資料才啟用 – 位置由 JS alignGhostBtns 設定）
+                pnlGhostFab.Visible = pnlFabFanout.Visible;
+                pnlGhostTl.Visible  = pnlTimeliness.Visible;
+                pnlGhostCr.Visible  = pnlCustResponse.Visible;
             }
             catch (Exception ex)
             {
@@ -196,6 +193,11 @@ namespace CRM
                 litCustFiles.Text = BuildFileLinks(custFiles);
                 pnlCustFiles.Visible = true;
             }
+
+            // 顯示外層 wrapper 及 ghost 按鈕（預設隱藏 – 由透明按鈕觸發）
+            bool hasCustData = pnlCustInfo.Visible || pnlCustFiles.Visible;
+            pnlCustInfoFilesWrapper.Visible = hasCustData;
+            pnlGhostCustInfo.Visible = hasCustData;
         }
 
         private void BindInvestigationReport(List<FileRow> fileRows)
@@ -376,7 +378,7 @@ namespace CRM
             return sb.ToString();
         }
 
-        /// <summary>客戶回應與意見 三欄表格（客戶意見、產品處置、時間）</summary>
+        /// <summary>客戶回應與意見 兩欄表格（客戶意見、產品處置）</summary>
         private string BuildCustomerResponseHtml(List<CustomerResponseRow> rows)
         {
             var sb = new StringBuilder();
@@ -384,7 +386,6 @@ namespace CRM
             sb.Append("<table class='data-tbl'><thead><tr>");
             sb.Append("<th>客戶意見</th>");
             sb.Append("<th style='width:200px'>產品處置</th>");
-            sb.Append("<th style='width:140px'>時間</th>");
             sb.Append("</tr></thead><tbody>");
 
             foreach (var row in rows)
@@ -394,7 +395,6 @@ namespace CRM
                 sb.AppendFormat("<td style='white-space:pre-wrap;word-break:break-word'>{0}</td>",
                                 FmtMultiline(memo));
                 sb.AppendFormat("<td>{0}</td>", Enc(MapProdDispose(row.ProdDispose)));
-                sb.Append("<td>—</td>");
                 sb.Append("</tr>");
             }
 

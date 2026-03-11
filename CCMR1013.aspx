@@ -119,25 +119,58 @@
         .mt4 { margin-top:4px; } .mt8 { margin-top:8px; }
         .divider { border:none; border-top:1px solid #e4eaf2; margin:10px 0; }
 
-        /* More-info toggle bar */
-        .more-info-bar {
-            display:flex; flex-wrap:wrap; align-items:center; gap:8px;
-            padding:10px 16px; background:#f8fafc;
-            border:1px solid #d3dae6; border-top:none;
+        /* Outer layout – provides room for ghost buttons in left gutter */
+        .outer-rel { position:relative; max-width:1180px; margin:0 auto; }
+
+        /* Transparent ghost buttons (invisible but clickable, left of form) */
+        .ghost-btn-abs {
+            position:absolute;
+            width:26px; height:50px;
+            background:transparent !important;
+            border:none !important; outline:none !important;
+            opacity:0;
+            cursor:pointer;
+            z-index:200;
+            padding:0;
         }
-        .more-info-label { font-size:12px; font-weight:700; color:#495057; white-space:nowrap; }
-        .more-info-btn {
-            display:inline-flex; align-items:center; gap:5px;
-            padding:4px 14px; border-radius:20px; font-size:12px; font-weight:600;
-            border:1.5px solid #6c757d; background:#fff; color:#495057;
-            cursor:pointer; transition:all .18s; line-height:1.6;
-        }
-        .more-info-btn:hover, .more-info-btn.section-open { background:#6c757d; color:#fff; border-color:#5a6268; }
-        .more-info-btn:focus { outline:none; }
+        #ghostStrip { position:absolute; top:0; left:0; width:0; height:0; overflow:visible; }
     </style>
 </head>
 <body>
 <form id="form1" runat="server">
+<div class="outer-rel" id="outerRel">
+
+<%-- ═══════════════════════════════════════════
+     Ghost buttons – 透明、不可見，放在表單外左側
+     位置由 JS alignGhostBtns() 設定
+═══════════════════════════════════════════ --%>
+<div id="ghostStrip">
+    <%-- 客戶提供資訊/客戶提供檔案 ─ 觸發位置：異常說明左側 --%>
+    <asp:Panel ID="pnlGhostCustInfo" runat="server" Visible="false">
+        <button id="ghostCustInfo" type="button" class="ghost-btn-abs"
+                onclick="toggleGhostSec('custInfoFilesBlock',this)"
+                title="展開/收合 客戶提供資訊" aria-hidden="true" tabindex="-1"></button>
+    </asp:Panel>
+    <%-- Fab fanout ─ 觸發位置：調查報告左側 --%>
+    <asp:Panel ID="pnlGhostFab" runat="server" Visible="false">
+        <button id="ghostFab" type="button" class="ghost-btn-abs"
+                onclick="toggleGhostSec('fabFanoutSection',this)"
+                title="展開/收合 Fab fanout" aria-hidden="true" tabindex="-1"></button>
+    </asp:Panel>
+    <%-- 處理時效紀錄 ─ 觸發位置：真因分析左側 --%>
+    <asp:Panel ID="pnlGhostTl" runat="server" Visible="false">
+        <button id="ghostTl" type="button" class="ghost-btn-abs"
+                onclick="toggleGhostSec('timelinessSection',this)"
+                title="展開/收合 處理時效紀錄" aria-hidden="true" tabindex="-1"></button>
+    </asp:Panel>
+    <%-- 客戶回應與意見 ─ 觸發位置：矯正/預防措施左側 --%>
+    <asp:Panel ID="pnlGhostCr" runat="server" Visible="false">
+        <button id="ghostCr" type="button" class="ghost-btn-abs"
+                onclick="toggleGhostSec('custResponseSection',this)"
+                title="展開/收合 客戶回應與意見" aria-hidden="true" tabindex="-1"></button>
+    </asp:Panel>
+</div>
+
 <div class="page-wrapper">
 
     <%-- Error / notice --%>
@@ -172,21 +205,26 @@
                 <div class="field-lbl">案件主旨</div>
                 <div class="field-val"><asp:Literal ID="litSubject" runat="server"></asp:Literal></div>
             </div>
-            <div class="field-row">
+            <div class="field-row" id="anomalyRow">
                 <div class="field-lbl">異常說明</div>
                 <div class="field-val multiline"><asp:Literal ID="litAnomaly" runat="server"></asp:Literal></div>
             </div>
-            <asp:Panel ID="pnlCustInfo" runat="server" Visible="false">
-                <hr class="divider" />
-                <div class="field-row">
-                    <div class="field-lbl">客戶提供資訊</div>
-                    <div class="field-val multiline"><asp:Literal ID="litCustInfo" runat="server"></asp:Literal></div>
-                </div>
-            </asp:Panel>
-            <asp:Panel ID="pnlCustFiles" runat="server" Visible="false">
-                <div class="field-row mt4">
-                    <div class="field-lbl">客戶提供檔案</div>
-                    <div class="field-val file-list"><asp:Literal ID="litCustFiles" runat="server"></asp:Literal></div>
+            <%-- 客戶提供資訊 / 客戶提供檔案：預設隱藏，由透明按鈕觸發 --%>
+            <asp:Panel ID="pnlCustInfoFilesWrapper" runat="server" Visible="false">
+                <div id="custInfoFilesBlock" style="display:none">
+                    <asp:Panel ID="pnlCustInfo" runat="server" Visible="false">
+                        <hr class="divider" />
+                        <div class="field-row">
+                            <div class="field-lbl">客戶提供資訊</div>
+                            <div class="field-val multiline"><asp:Literal ID="litCustInfo" runat="server"></asp:Literal></div>
+                        </div>
+                    </asp:Panel>
+                    <asp:Panel ID="pnlCustFiles" runat="server" Visible="false">
+                        <div class="field-row mt4">
+                            <div class="field-lbl">客戶提供檔案</div>
+                            <div class="field-val file-list"><asp:Literal ID="litCustFiles" runat="server"></asp:Literal></div>
+                        </div>
+                    </asp:Panel>
                 </div>
             </asp:Panel>
         </div>
@@ -198,7 +236,7 @@
     ═══════════════════════════════════════════ --%>
     <asp:Panel ID="pnlInvestigation" runat="server" Visible="false">
         <div class="sec-card">
-            <div class="sec-header collapsible" onclick="toggleSec(this,'invBody')">
+            <div id="invSecHdr" class="sec-header collapsible" onclick="toggleSec(this,'invBody')">
                 <i class="fas fa-chevron-right chevron-icon open" aria-hidden="true"></i>
                 <i class="fas fa-file-alt sec-icon"></i>調查報告 及 相關附件
             </div>
@@ -214,7 +252,7 @@
     ═══════════════════════════════════════════ --%>
     <asp:Panel ID="pnlRootCause" runat="server" Visible="false">
         <div class="sec-card">
-            <div class="sec-header">
+            <div id="rcSecHdr" class="sec-header">
                 <i class="fas fa-search-plus sec-icon"></i>真因分析
             </div>
             <div class="sec-body">
@@ -229,42 +267,13 @@
     ═══════════════════════════════════════════ --%>
     <asp:Panel ID="pnlCorrectiveActions" runat="server" Visible="false">
         <div class="sec-card">
-            <div class="sec-header collapsible" onclick="toggleSec(this,'caBody')">
+            <div id="caSecHdr" class="sec-header collapsible" onclick="toggleSec(this,'caBody')">
                 <i class="fas fa-chevron-right chevron-icon open" aria-hidden="true"></i>
                 <i class="fas fa-tools sec-icon"></i>矯正/預防措施執行暨成效追蹤
             </div>
             <div id="caBody" class="sec-body">
                 <asp:Literal ID="litCorrectiveActions" runat="server"></asp:Literal>
             </div>
-        </div>
-    </asp:Panel>
-
-    <%-- ═══════════════════════════════════════════
-         More-info toggle bar
-         只有當至少一個灰框有資料時才顯示。
-         按鈕點擊後整個灰框區塊才會顯示（預設隱藏）。
-    ═══════════════════════════════════════════ --%>
-    <asp:Panel ID="pnlMoreInfoBar" runat="server" Visible="false">
-        <div class="more-info-bar">
-            <span class="more-info-label"><i class="fas fa-eye mr-1"></i>展開其他資訊：</span>
-            <asp:Panel ID="pnlBtnFabFanout" runat="server" Visible="false">
-                <button type="button" class="more-info-btn"
-                        onclick="toggleGreySec('fabFanoutSection', this)">
-                    <i class="fas fa-network-wired"></i> Fab fanout
-                </button>
-            </asp:Panel>
-            <asp:Panel ID="pnlBtnTimeliness" runat="server" Visible="false">
-                <button type="button" class="more-info-btn"
-                        onclick="toggleGreySec('timelinessSection', this)">
-                    <i class="fas fa-clock"></i> 處理時效紀錄
-                </button>
-            </asp:Panel>
-            <asp:Panel ID="pnlBtnCustResponse" runat="server" Visible="false">
-                <button type="button" class="more-info-btn"
-                        onclick="toggleGreySec('custResponseSection', this)">
-                    <i class="fas fa-comments"></i> 客戶回應與意見
-                </button>
-            </asp:Panel>
         </div>
     </asp:Panel>
 
@@ -318,8 +327,8 @@
             </div>
         </div>
     </asp:Panel>
-
-</div>
+</div><%-- /page-wrapper --%>
+</div><%-- /outer-rel --%>
 </form>
 
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"
@@ -351,23 +360,54 @@
     }
 
     /**
-     * Toggle an entirely hidden grey section.
-     * The section is wrapped in a div that starts with display:none.
-     * Marks the triggering button with class 'section-open'.
+     * Toggle an entirely hidden section via ghost (transparent) button.
+     * sectionId: the div wrapper with display:none.
+     * btn: the ghost button element (optional, for state tracking).
      */
-    function toggleGreySec(sectionId, btn) {
+    function toggleGhostSec(sectionId, btn) {
         var section = document.getElementById(sectionId);
         if (!section) return;
         var isHidden = section.style.display === 'none' || section.style.display === '';
         section.style.display = isHidden ? 'block' : 'none';
-        if (btn) {
-            if (isHidden) {
-                btn.classList.add('section-open');
-            } else {
-                btn.classList.remove('section-open');
-            }
-        }
     }
+
+    /**
+     * Align ghost buttons with their anchor elements.
+     * Called on load and resize so buttons track the correct row.
+     */
+    function alignGhostBtns() {
+        var outerEl = document.getElementById('outerRel');
+        var pageWrapper = document.querySelector('.page-wrapper');
+        if (!outerEl || !pageWrapper) return;
+
+        var outerRect = outerEl.getBoundingClientRect();
+        var pwRect    = pageWrapper.getBoundingClientRect();
+
+        // Left position: just outside the left edge of page-wrapper
+        var GHOST_BTN_OFFSET = 28; // button width (26px) + 2px gap
+        var leftPx = pwRect.left - outerRect.left - GHOST_BTN_OFFSET;
+        if (leftPx < 0) leftPx = 0; // clamp when viewport is too narrow
+
+        var anchors = [
+            { btnId: 'ghostCustInfo', anchorId: 'anomalyRow' },
+            { btnId: 'ghostFab',      anchorId: 'invSecHdr'  },
+            { btnId: 'ghostTl',       anchorId: 'rcSecHdr'   },
+            { btnId: 'ghostCr',       anchorId: 'caSecHdr'   }
+        ];
+
+        anchors.forEach(function (a) {
+            var btn    = document.getElementById(a.btnId);
+            var anchor = document.getElementById(a.anchorId);
+            if (!btn || !anchor) return;
+            var anchorRect = anchor.getBoundingClientRect();
+            var topPx = anchorRect.top - outerRect.top;
+            btn.style.top  = topPx  + 'px';
+            btn.style.left = leftPx + 'px';
+        });
+    }
+
+    window.addEventListener('load',   alignGhostBtns);
+    window.addEventListener('resize', alignGhostBtns);
 </script>
 </body>
 </html>
