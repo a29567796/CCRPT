@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="CCMR1013.aspx.cs" Inherits="CCRPT.CCMR1013" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="CCMR1013.aspx.cs" Inherits="CRM.CCMR1013" %>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-TW">
 <head runat="server">
@@ -115,16 +115,25 @@
         .bs-abort  { background:#f8d7da; color:#721c24; border-color:#dc3545; }
         .bs-other  { background:#e8e8e8; color:#555;    border-color:#ccc;    }
 
-        /* Two-column grid */
-        .two-col-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-        @media(max-width:640px) { .two-col-grid { grid-template-columns:1fr; } }
-        .grid-lbl { font-weight:700; font-size:12px; color:#4a5568; margin-bottom:5px; }
-        .grid-lbl::after { content:':'; }
-        .grid-val { color:#212529; line-height:1.6; white-space:pre-wrap; word-break:break-word; }
-
         .no-data-msg { color:#888; font-style:italic; font-size:12px; }
         .mt4 { margin-top:4px; } .mt8 { margin-top:8px; }
         .divider { border:none; border-top:1px solid #e4eaf2; margin:10px 0; }
+
+        /* More-info toggle bar */
+        .more-info-bar {
+            display:flex; flex-wrap:wrap; align-items:center; gap:8px;
+            padding:10px 16px; background:#f8fafc;
+            border:1px solid #d3dae6; border-top:none;
+        }
+        .more-info-label { font-size:12px; font-weight:700; color:#495057; white-space:nowrap; }
+        .more-info-btn {
+            display:inline-flex; align-items:center; gap:5px;
+            padding:4px 14px; border-radius:20px; font-size:12px; font-weight:600;
+            border:1.5px solid #6c757d; background:#fff; color:#495057;
+            cursor:pointer; transition:all .18s; line-height:1.6;
+        }
+        .more-info-btn:hover, .more-info-btn.section-open { background:#6c757d; color:#fff; border-color:#5a6268; }
+        .more-info-btn:focus { outline:none; }
     </style>
 </head>
 <body>
@@ -231,60 +240,80 @@
     </asp:Panel>
 
     <%-- ═══════════════════════════════════════════
-         Section 5 – Fab fanout  【灰框 1 — 預設收合】
+         More-info toggle bar
+         只有當至少一個灰框有資料時才顯示。
+         按鈕點擊後整個灰框區塊才會顯示（預設隱藏）。
+    ═══════════════════════════════════════════ --%>
+    <asp:Panel ID="pnlMoreInfoBar" runat="server" Visible="false">
+        <div class="more-info-bar">
+            <span class="more-info-label"><i class="fas fa-eye mr-1"></i>展開其他資訊：</span>
+            <asp:Panel ID="pnlBtnFabFanout" runat="server" Visible="false">
+                <button type="button" class="more-info-btn"
+                        onclick="toggleGreySec('fabFanoutSection', this)">
+                    <i class="fas fa-network-wired"></i> Fab fanout
+                </button>
+            </asp:Panel>
+            <asp:Panel ID="pnlBtnTimeliness" runat="server" Visible="false">
+                <button type="button" class="more-info-btn"
+                        onclick="toggleGreySec('timelinessSection', this)">
+                    <i class="fas fa-clock"></i> 處理時效紀錄
+                </button>
+            </asp:Panel>
+            <asp:Panel ID="pnlBtnCustResponse" runat="server" Visible="false">
+                <button type="button" class="more-info-btn"
+                        onclick="toggleGreySec('custResponseSection', this)">
+                    <i class="fas fa-comments"></i> 客戶回應與意見
+                </button>
+            </asp:Panel>
+        </div>
+    </asp:Panel>
+
+    <%-- ═══════════════════════════════════════════
+         Section 5 – Fab fanout  【灰框 1 — 預設隱藏】
     ═══════════════════════════════════════════ --%>
     <asp:Panel ID="pnlFabFanout" runat="server" Visible="false">
-        <div class="sec-card">
-            <div class="sec-header grey collapsible" onclick="toggleSec(this,'fabBody')">
-                <i class="fas fa-chevron-right chevron-icon" aria-hidden="true"></i>
-                <i class="fas fa-network-wired sec-icon"></i>Fab fanout
-            </div>
-            <div id="fabBody" class="sec-body collapsed">
-                <asp:Literal ID="litFabFanout" runat="server"></asp:Literal>
-                <asp:Panel ID="pnlFabFiles" runat="server" Visible="false">
-                    <div class="mt8">
-                        <div class="grid-lbl">附件</div>
-                        <div class="file-list mt4"><asp:Literal ID="litFabFiles" runat="server"></asp:Literal></div>
-                    </div>
-                </asp:Panel>
+        <div id="fabFanoutSection" style="display:none">
+            <div class="sec-card">
+                <div class="sec-header grey collapsible" onclick="toggleSec(this,'fabBody')">
+                    <i class="fas fa-chevron-right chevron-icon open" aria-hidden="true"></i>
+                    <i class="fas fa-network-wired sec-icon"></i>Fab fanout
+                </div>
+                <div id="fabBody" class="sec-body">
+                    <asp:Literal ID="litFabFanout" runat="server"></asp:Literal>
+                </div>
             </div>
         </div>
     </asp:Panel>
 
     <%-- ═══════════════════════════════════════════
-         Section 6 – 處理時效紀錄  【灰框 2 — 預設收合】
+         Section 6 – 處理時效紀錄  【灰框 2 — 預設隱藏】
     ═══════════════════════════════════════════ --%>
     <asp:Panel ID="pnlTimeliness" runat="server" Visible="false">
-        <div class="sec-card">
-            <div class="sec-header grey collapsible" onclick="toggleSec(this,'tlBody')">
-                <i class="fas fa-chevron-right chevron-icon" aria-hidden="true"></i>
-                <i class="fas fa-clock sec-icon"></i>處理時效紀錄
-            </div>
-            <div id="tlBody" class="sec-body collapsed">
-                <asp:Literal ID="litTimeliness" runat="server"></asp:Literal>
+        <div id="timelinessSection" style="display:none">
+            <div class="sec-card">
+                <div class="sec-header grey collapsible" onclick="toggleSec(this,'tlBody')">
+                    <i class="fas fa-chevron-right chevron-icon open" aria-hidden="true"></i>
+                    <i class="fas fa-clock sec-icon"></i>處理時效紀錄
+                </div>
+                <div id="tlBody" class="sec-body">
+                    <asp:Literal ID="litTimeliness" runat="server"></asp:Literal>
+                </div>
             </div>
         </div>
     </asp:Panel>
 
     <%-- ═══════════════════════════════════════════
-         Section 7 – 客戶回應與意見  【灰框 3 — 預設收合】
+         Section 7 – 客戶回應與意見  【灰框 3 — 預設隱藏】
     ═══════════════════════════════════════════ --%>
     <asp:Panel ID="pnlCustResponse" runat="server" Visible="false">
-        <div class="sec-card" style="border-radius:0 0 6px 6px;">
-            <div class="sec-header grey collapsible" onclick="toggleSec(this,'crBody')">
-                <i class="fas fa-chevron-right chevron-icon" aria-hidden="true"></i>
-                <i class="fas fa-comments sec-icon"></i>客戶回應與意見
-            </div>
-            <div id="crBody" class="sec-body collapsed">
-                <div class="two-col-grid">
-                    <div>
-                        <div class="grid-lbl">客戶意見</div>
-                        <div class="grid-val"><asp:Literal ID="litCustMemo" runat="server"></asp:Literal></div>
-                    </div>
-                    <div>
-                        <div class="grid-lbl">產品處置</div>
-                        <div class="grid-val"><asp:Literal ID="litProdDispose" runat="server"></asp:Literal></div>
-                    </div>
+        <div id="custResponseSection" style="display:none">
+            <div class="sec-card" style="border-radius:0 0 6px 6px;">
+                <div class="sec-header grey collapsible" onclick="toggleSec(this,'crBody')">
+                    <i class="fas fa-chevron-right chevron-icon open" aria-hidden="true"></i>
+                    <i class="fas fa-comments sec-icon"></i>客戶回應與意見
+                </div>
+                <div id="crBody" class="sec-body">
+                    <asp:Literal ID="litCustResponse" runat="server"></asp:Literal>
                 </div>
             </div>
         </div>
@@ -303,12 +332,12 @@
      * Rotates the chevron and shows/hides the body div.
      */
     function toggleSec(header, bodyId) {
-        var body    = document.getElementById(bodyId);
+        var body = document.getElementById(bodyId);
         var chevron = header.querySelector('.chevron-icon');
         if (!body) return;
 
         var isOpen = !body.classList.contains('collapsed') &&
-                     body.style.display !== 'none';
+            body.style.display !== 'none';
 
         if (isOpen) {
             body.style.display = 'none';
@@ -318,6 +347,25 @@
             body.style.display = '';
             body.classList.remove('collapsed');
             if (chevron) chevron.classList.add('open');
+        }
+    }
+
+    /**
+     * Toggle an entirely hidden grey section.
+     * The section is wrapped in a div that starts with display:none.
+     * Marks the triggering button with class 'section-open'.
+     */
+    function toggleGreySec(sectionId, btn) {
+        var section = document.getElementById(sectionId);
+        if (!section) return;
+        var isHidden = section.style.display === 'none' || section.style.display === '';
+        section.style.display = isHidden ? 'block' : 'none';
+        if (btn) {
+            if (isHidden) {
+                btn.classList.add('section-open');
+            } else {
+                btn.classList.remove('section-open');
+            }
         }
     }
 </script>
